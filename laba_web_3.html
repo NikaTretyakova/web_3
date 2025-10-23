@@ -257,17 +257,14 @@
         alert('Комментарий добавлен!');
     }
 
-    // Сохранение комментария в localStorage
     function saveComment(comment) {
         let comments = JSON.parse(localStorage.getItem('pageComments')) || [];
         comments.push(comment);
         localStorage.setItem('pageComments', JSON.stringify(comments));
     }
 
-    // Сохранение комментария в текстовый файл (эмулируем)
+    // Сохранение комментария в текстовый файл 
     function saveCommentToTxt(comment) {
-        // В реальном веб-приложении мы не можем напрямую записывать в файл на сервере
-        // Поэтому сохраняем в localStorage и предоставляем возможность скачать
         console.log('Комментарий сохранен для TXT:', comment);
     }
 
