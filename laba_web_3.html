@@ -67,6 +67,10 @@
             margin: 5px;
             width: 200px;
         }
+        .download-btn {
+            background: #2196F3;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -119,175 +123,152 @@
     </div>
 
     <!-- Секция комментариев -->
-<div class="comment-section">
-    <h2>Комментарии</h2>
-    
-    <!-- Панель автора -->
-    <div class="admin-panel" id="adminPanel" style="display: none;">
-        <h3>Панель управления комментариями (Автор)</h3>
-        <button id="logoutBtn">Выйти</button>
-        <button id="clearAllBtn" style="background: #ff4444; margin-left: 10px;">Удалить все комментарии</button>
-    </div>
+    <div class="comment-section">
+        <h2>Комментарии</h2>
+        
+        <!-- Панель автора -->
+        <div class="admin-panel" id="adminPanel" style="display: none;">
+            <h3>Панель управления комментариями (Автор)</h3>
+            <button id="logoutBtn">Выйти</button>
+            <button id="clearAllBtn" style="background: #ff4444; margin-left: 10px;">Удалить все комментарии</button>
+            <button id="downloadCommentsBtn" class="download-btn">Скачать комментарии (TXT)</button>
+        </div>
 
-    <!-- Форма входа для автора -->
-    <div class="login-form" id="loginForm">
-        <h3>Вход для автора</h3>
-        <input type="password" id="adminPassword" class="login-input" placeholder="Пароль">
-        <button id="loginBtn">Войти</button>
+        <!-- Форма входа для автора -->
+        <div class="login-form" id="loginForm">
+            <h3>Вход для автора</h3>
+            <input type="password" id="adminPassword" class="login-input" placeholder="Пароль">
+            <button id="loginBtn">Войти</button>
+        </div>
+
+        <!-- Форма добавления комментария -->
+        <div>
+            <h3>Добавить комментарий</h3>
+            <input type="text" id="authorName" placeholder="Ваше имя" style="width: 300px; padding: 8px; margin: 5px 0;">
+            <textarea id="commentText" placeholder="Ваш комментарий"></textarea>
+            <button id="submitComment">Отправить комментарий</button>
+        </div>
+
+        <!-- Список комментариев -->
+        <div id="commentsList"></div>
     </div>
-    
-    <!-- Форма добавления комментария -->
-    <div>
-        <input type="text" id="authorName" placeholder="Ваше имя" style="width: 200px; margin-bottom: 10px;">
-        <br>
-        <textarea id="commentText" placeholder="Оставьте ваш комментарий..."></textarea>
-        <br>
-        <button id="addCommentBtn">Добавить комментарий</button>
-    </div>
-    
-    <div id="commentsList"></div>
-</div>
 
 <script>
-    // Настройки Telegram
-    const BOT_TOKEN = '7376059149:AAEg_YJoP1MXDz_iHRhPpiHZyiM7tHWj1Fc';
-    const CHAT_ID = '-1003022990503';
+    // Конфигурация
+    const ADMIN_PASSWORD = "admin123"; // Пароль для доступа автора
 
-    // Пароль автора
-    const ADMIN_PASSWORD = "nika";
+    // Переменные состояния
     let isAuthorLoggedIn = false;
 
-    // Элементы DOM
-    const addCommentBtn = document.getElementById('addCommentBtn');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-
-    // Загрузка при старте
+    // Инициализация
     document.addEventListener('DOMContentLoaded', function() {
         loadComments();
-        checkAuth();
-        
-        // Назначаем обработчики событий
-        addCommentBtn.addEventListener('click', addComment);
-        loginBtn.addEventListener('click', login);
-        logoutBtn.addEventListener('click', logout);
-        clearAllBtn.addEventListener('click', clearAllComments);
-        
-        // Enter для добавления комментария
-        document.getElementById('commentText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                addComment();
-            }
-        });
+        setupEventListeners();
+        checkAdminStatus();
     });
 
-    // Проверка авторизации
-    function checkAuth() {
-        const savedAuth = localStorage.getItem('isAuthorLoggedIn');
-        if (savedAuth === 'true') {
+    // Настройка обработчиков событий
+    function setupEventListeners() {
+        document.getElementById('submitComment').addEventListener('click', submitComment);
+        document.getElementById('loginBtn').addEventListener('click', loginAsAuthor);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('clearAllBtn').addEventListener('click', clearAllComments);
+        document.getElementById('downloadCommentsBtn').addEventListener('click', downloadCommentsAsTxt);
+        
+        // Enter для отправки комментария
+        document.getElementById('commentText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                submitComment();
+            }
+        });
+        
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginAsAuthor();
+            }
+        });
+    }
+
+    // Проверка статуса администратора
+    function checkAdminStatus() {
+        const savedStatus = localStorage.getItem('isAuthorLoggedIn');
+        if (savedStatus === 'true') {
             isAuthorLoggedIn = true;
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('loginForm').style.display = 'none';
+            showAdminPanel();
         }
     }
 
-    // Вход автора
-    function login() {
+    // Вход как автор
+    function loginAsAuthor() {
         const password = document.getElementById('adminPassword').value;
         if (password === ADMIN_PASSWORD) {
             isAuthorLoggedIn = true;
             localStorage.setItem('isAuthorLoggedIn', 'true');
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('adminPassword').value = '';
-            loadComments();
+            showAdminPanel();
             alert('Вы вошли как автор!');
         } else {
-            alert('Неверный пароль');
+            alert('Неверный пароль!');
         }
+        document.getElementById('adminPassword').value = '';
     }
 
-    // Выход автора
+    // Выход
     function logout() {
         isAuthorLoggedIn = false;
         localStorage.removeItem('isAuthorLoggedIn');
         document.getElementById('adminPanel').style.display = 'none';
         document.getElementById('loginForm').style.display = 'block';
-        loadComments();
-        alert('Вы вышли из режима автора');
+        loadComments(); // Перезагружаем комментарии без кнопок удаления
+        alert('Вы вышли из режима автора!');
     }
 
-    // Добавление комментария
-    async function addComment() {
+    // Показать панель администратора
+    function showAdminPanel() {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('loginForm').style.display = 'none';
+        loadComments(); // Перезагружаем комментарии с кнопками удаления
+    }
+
+    // Отправка комментария
+    function submitComment() {
         const author = document.getElementById('authorName').value.trim();
         const text = document.getElementById('commentText').value.trim();
         
         if (!author || !text) {
-            alert('Пожалуйста, заполните все поля');
+            alert('Пожалуйста, заполните все поля!');
             return;
         }
         
         const comment = {
-            id: Date.now(),
+            id: Date.now().toString(),
             author: author,
             text: text,
             date: new Date().toLocaleString('ru-RU')
         };
         
-        // Сохраняем локально
         saveComment(comment);
+        saveCommentToTxt(comment);
         displayComment(comment);
         
-        // Отправляем в Telegram
-        const telegramSent = await sendToTelegram(comment);
-        
-        if (telegramSent) {
-            alert('Комментарий добавлен и отправлен в Telegram! 📱');
-        } else {
-            alert('Комментарий добавлен локально (ошибка отправки в Telegram)');
-        }
-        
-        document.getElementById('authorName').value = '';
+        // Очистка формы
         document.getElementById('commentText').value = '';
+        document.getElementById('authorName').value = '';
+        
+        alert('Комментарий добавлен!');
     }
 
-    // Отправка в Telegram
-    async function sendToTelegram(comment) {
-        if (!BOT_TOKEN || !CHAT_ID) {
-            console.log('Telegram не настроен');
-            return false;
-        }
-        
-        const message = `💬 Новый комментарий с сайта:\n\n👤 Имя: ${comment.author}\n📝 Текст: ${comment.text}\n🕐 Дата: ${comment.date}`;
-        
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    chat_id: CHAT_ID,
-                    text: message,
-                    parse_mode: 'HTML'
-                })
-            });
-            
-            const result = await response.json();
-            return result.ok;
-        } catch (error) {
-            console.log('Ошибка отправки в Telegram:', error);
-            return false;
-        }
-    }
-
-    // Сохранение комментария
+    // Сохранение комментария в localStorage
     function saveComment(comment) {
         let comments = JSON.parse(localStorage.getItem('pageComments')) || [];
         comments.push(comment);
         localStorage.setItem('pageComments', JSON.stringify(comments));
+    }
+
+    // Сохранение комментария в текстовый файл (эмулируем)
+    function saveCommentToTxt(comment) {
+        // В реальном веб-приложении мы не можем напрямую записывать в файл на сервере
+        // Поэтому сохраняем в localStorage и предоставляем возможность скачать
+        console.log('Комментарий сохранен для TXT:', comment);
     }
 
     // Загрузка комментариев
@@ -305,7 +286,6 @@
         commentDiv.className = 'comment';
         commentDiv.id = 'comment-' + comment.id;
         
-        // Безопасное создание элементов
         const authorDiv = document.createElement('div');
         authorDiv.className = 'comment-author';
         authorDiv.textContent = comment.author;
@@ -351,6 +331,39 @@
             loadComments();
             alert('Все комментарии удалены!');
         }
+    }
+
+    // Скачать комментарии как TXT файл
+    function downloadCommentsAsTxt() {
+        const comments = JSON.parse(localStorage.getItem('pageComments')) || [];
+        
+        if (comments.length === 0) {
+            alert('Нет комментариев для скачивания!');
+            return;
+        }
+        
+        let txtContent = 'Комментарии с сайта\n';
+        txtContent += '===================\n\n';
+        
+        comments.forEach((comment, index) => {
+            txtContent += `Комментарий #${index + 1}:\n`;
+            txtContent += `Автор: ${comment.author}\n`;
+            txtContent += `Дата: ${comment.date}\n`;
+            txtContent += `Текст: ${comment.text}\n`;
+            txtContent += '─'.repeat(50) + '\n\n';
+        });
+        
+        const blob = new Blob([txtContent], { type: 'text/plain; charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comments_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Комментарии скачаны в TXT файл!');
     }
 </script>
 </body>
