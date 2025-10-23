@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Анкеты</title>
+    <style>
+        .comment-section {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+        .comment {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .comment-author {
+            font-weight: bold;
+            color: #333;
+        }
+        .comment-text {
+            margin: 5px 0;
+        }
+        .comment-date {
+            font-size: 0.8em;
+            color: #666;
+        }
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .admin-panel {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2196F3;
+        }
+        textarea {
+            width: 100%;
+            height: 60px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .login-form {
+            margin: 10px 0;
+        }
+        .login-input {
+            padding: 5px;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Первая анкета -->
+    <div>
+        <h2>Третьякова Валерия Дмитриевна</h2>
+        <img src="https://i.postimg.cc/q7s3snKg/photo-lera.jpg" alt="Фото" width="150">
+        <p>Мне 19 лет, живу в Новосибирске.</p>
+        <p>Учусь в НГТУ НЭТИ, на 3 курсе.</p>
+        
+        <h3>Обо мне</h3>
+        <p>Мне нравится кататься на коньках, рисовать, вышивать и читать. </p>
+        
+        <h3>Что поднимает мне настроение</h3>
+        <ul>
+            <li>Милые животные (например, доберманы)</li>
+            <li>Вкусная еда</li>
+            <li>Поездки домой на каникулах</li>
+            <li>Подделки своими руками</li>
+            <li>Подарки</li>
+        </ul>
+
+        <h3>Контакты</h3>
+        <p>Email: <a href="mailto:leratretakova04@gmail.com">leratretakova04@gmail.com</a></p>
+        <p>ВКонтакте: <a href="https://vk.com/ksyshlysha" target="_blank">Третьякова Лера</a></p>
+    </div>
+    
+    <!-- Вторая анкета -->
+    <div>
+        <h2>Третьякова Вероника Дмитриевна</h2>
+        <img src="https://i.postimg.cc/jjDsKrs1/photo-nika.jpg" alt="Фото" width="150">
+        <p>Университет: Новосибирский государственный технический университет</p>
+        <p>Студентка 3 курса</p>
+        
+        <h3>Обо мне</h3>
+        <p>Люблю учиться, занимаюсь рукоделием, хожу на танцы и учавствую в благотворительных мероприятиях.</p>
+        
+        <h3>Личные качества</h3>
+        <ul>
+            <li>Ответственность</li>
+            <li>Коммуникабельность</li>
+            <li>Обучаемость</li>
+            <li>Креативность</li>
+            <li>Трудолюбие</li>
+        </ul>
+        
+        <h3>Контакты</h3>
+        <p>Email: <a href="mailto:tretakovanika457@gmail.com">tretakovanika457@gmail.com</a></p>
+        <p>ВКонтакте: <a href="https://vk.com/nikatret" target="_blank">Третьякова Вероника</a></p>
+    </div>
+
+    <!-- Секция комментариев -->
+    <div class="comment-section">
+        <h2>Комментарии</h2>
+        
+        <!-- Панель автора -->
+        <div class="admin-panel" id="adminPanel" style="display: none;">
+            <h3>Панель управления комментариями (Автор)</h3>
+            <button onclick="logout()">Выйти</button>
+            <button onclick="clearAllComments()" style="background: #ff4444; margin-left: 10px;">Удалить все комментарии</button>
+        </div>
+
+        <!-- Форма входа для автора -->
+        <div class="login-form" id="loginForm">
+            <h3>Вход для автора</h3>
+            <input type="password" id="adminPassword" class="login-input" placeholder="Пароль">
+            <button onclick="login()">Войти</button>
+        </div>
+        
+        <!-- Форма добавления комментария -->
+        <div>
+            <input type="text" id="authorName" placeholder="Ваше имя" style="width: 200px; margin-bottom: 10px;">
+            <br>
+            <textarea id="commentText" placeholder="Оставьте ваш комментарий..."></textarea>
+            <br>
+            <button onclick="addComment()">Добавить комментарий</button>
+        </div>
+        
+        <div id="commentsList"></div>
+    </div>
+
+    <script>
+        // Пароль автора (можно поменять)
+        const ADMIN_PASSWORD = "nika";
+        let isAuthorLoggedIn = false;
+
+        // Загрузка при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            loadComments();
+            checkAuth();
+        });
+
+        // Проверка авторизации
+        function checkAuth() {
+            const savedAuth = localStorage.getItem('isAuthorLoggedIn');
+            if (savedAuth === 'true') {
+                isAuthorLoggedIn = true;
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('loginForm').style.display = 'none';
+            }
+        }
+
+        // Вход автора
+        function login() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                isAuthorLoggedIn = true;
+                localStorage.setItem('isAuthorLoggedIn', 'true');
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminPassword').value = '';
+                loadComments(); // Перезагружаем комментарии с кнопками удаления
+            } else {
+                alert('Неверный пароль');
+            }
+        }
+
+        // Выход автора
+        function logout() {
+            isAuthorLoggedIn = false;
+            localStorage.removeItem('isAuthorLoggedIn');
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            loadComments(); // Перезагружаем комментарии без кнопок удаления
+        }
+
+        // Добавление комментария
+        function addComment() {
+            const author = document.getElementById('authorName').value.trim();
+            const text = document.getElementById('commentText').value.trim();
+            
+            if (!author || !text) {
+                alert('Пожалуйста, заполните все поля');
+                return;
+            }
+            
+            const comment = {
+                id: Date.now(),
+                author: author,
+                text: text,
+                date: new Date().toLocaleString('ru-RU')
+            };
+            
+            saveComment(comment);
+            displayComment(comment);
+            
+            document.getElementById('authorName').value = '';
+            document.getElementById('commentText').value = '';
+        }
+
+        // Сохранение комментария
+        function saveComment(comment) {
+            let comments = JSON.parse(localStorage.getItem('pageComments')) || [];
+            comments.push(comment);
+            localStorage.setItem('pageComments', JSON.stringify(comments));
+        }
+
+        // Загрузка комментариев
+        function loadComments() {
+            const comments = JSON.parse(localStorage.getItem('pageComments')) || [];
+            const commentsList = document.getElementById('commentsList');
+            commentsList.innerHTML = '';
+            comments.forEach(displayComment);
+        }
+
+        // Отображение комментария
+        function displayComment(comment) {
+            const commentsList = document.getElementById('commentsList');
+            const commentDiv = document.createElement('div');
+            commentDiv.className = 'comment';
+            
+            let deleteButton = '';
+            if (isAuthorLoggedIn) {
+                deleteButton = `<button class="delete-btn" onclick="deleteComment(${comment.id})">×</button>`;
+            }
+            
+            commentDiv.innerHTML = `
+                ${deleteButton}
+                <div class="comment-author">${escapeHtml(comment.author)}</div>
+                <div class="comment-text">${escapeHtml(comment.text)}</div>
+                <div class="comment-date">${comment.date}</div>
+            `;
+            commentsList.appendChild(commentDiv);
+        }
+
+        // Удаление комментария
+        function deleteComment(commentId) {
+            if (confirm('Вы уверены, что хотите удалить этот комментарий?')) {
+                let comments = JSON.parse(localStorage.getItem('pageComments')) || [];
+                comments = comments.filter(comment => comment.id !== commentId);
+                localStorage.setItem('pageComments', JSON.stringify(comments));
+                loadComments();
+            }
+        }
+
+        // Удаление всех комментариев
+        function clearAllComments() {
+            if (confirm('Вы уверены, что хотите удалить ВСЕ комментарии?')) {
+                localStorage.removeItem('pageComments');
+                loadComments();
+            }
+        }
+
+    </script>
+</body>
+</html>
