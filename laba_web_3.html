@@ -149,6 +149,10 @@
 </div>
 
 <script>
+    // Настройки Telegram
+    const BOT_TOKEN = '7376059149:AAEg_YJoP1MXDz_iHRhPpiHZyiM7tHWj1Fc';
+    const CHAT_ID = '-1003022990503';
+
     // Пароль автора
     const ADMIN_PASSWORD = "nika";
     let isAuthorLoggedIn = false;
@@ -216,7 +220,7 @@
     }
 
     // Добавление комментария
-    function addComment() {
+    async function addComment() {
         const author = document.getElementById('authorName').value.trim();
         const text = document.getElementById('commentText').value.trim();
         
@@ -232,13 +236,51 @@
             date: new Date().toLocaleString('ru-RU')
         };
         
+        // Сохраняем локально
         saveComment(comment);
         displayComment(comment);
         
+        // Отправляем в Telegram
+        const telegramSent = await sendToTelegram(comment);
+        
+        if (telegramSent) {
+            alert('Комментарий добавлен и отправлен в Telegram! 📱');
+        } else {
+            alert('Комментарий добавлен локально (ошибка отправки в Telegram)');
+        }
+        
         document.getElementById('authorName').value = '';
         document.getElementById('commentText').value = '';
+    }
+
+    // Отправка в Telegram
+    async function sendToTelegram(comment) {
+        if (!BOT_TOKEN || !CHAT_ID) {
+            console.log('Telegram не настроен');
+            return false;
+        }
         
-        alert('Комментарий добавлен!');
+        const message = `💬 Новый комментарий с сайта:\n\n👤 Имя: ${comment.author}\n📝 Текст: ${comment.text}\n🕐 Дата: ${comment.date}`;
+        
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+            
+            const result = await response.json();
+            return result.ok;
+        } catch (error) {
+            console.log('Ошибка отправки в Telegram:', error);
+            return false;
+        }
     }
 
     // Сохранение комментария
@@ -256,41 +298,41 @@
         comments.forEach(displayComment);
     }
 
-// Отображение комментария
-function displayComment(comment) {
-    const commentsList = document.getElementById('commentsList');
-    const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment';
-    commentDiv.id = 'comment-' + comment.id;
-    
-    // Безопасное создание элементов
-    const authorDiv = document.createElement('div');
-    authorDiv.className = 'comment-author';
-    authorDiv.textContent = comment.author;
-    
-    const textDiv = document.createElement('div');
-    textDiv.className = 'comment-text';
-    textDiv.textContent = comment.text;  // ← ИСПРАВЛЕНО ЗДЕСЬ!
-    
-    const dateDiv = document.createElement('div');
-    dateDiv.className = 'comment-date';
-    dateDiv.textContent = comment.date;
-    
-    commentDiv.appendChild(authorDiv);
-    commentDiv.appendChild(textDiv);
-    commentDiv.appendChild(dateDiv);
-    
-    // Кнопка удаления только для автора
-    if (isAuthorLoggedIn) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '×';
-        deleteBtn.onclick = function() { deleteComment(comment.id); };
-        commentDiv.appendChild(deleteBtn);
+    // Отображение комментария
+    function displayComment(comment) {
+        const commentsList = document.getElementById('commentsList');
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment';
+        commentDiv.id = 'comment-' + comment.id;
+        
+        // Безопасное создание элементов
+        const authorDiv = document.createElement('div');
+        authorDiv.className = 'comment-author';
+        authorDiv.textContent = comment.author;
+        
+        const textDiv = document.createElement('div');
+        textDiv.className = 'comment-text';
+        textDiv.textContent = comment.text;
+        
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'comment-date';
+        dateDiv.textContent = comment.date;
+        
+        commentDiv.appendChild(authorDiv);
+        commentDiv.appendChild(textDiv);
+        commentDiv.appendChild(dateDiv);
+        
+        // Кнопка удаления только для автора
+        if (isAuthorLoggedIn) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.onclick = function() { deleteComment(comment.id); };
+            commentDiv.appendChild(deleteBtn);
+        }
+        
+        commentsList.appendChild(commentDiv);
     }
-    
-    commentsList.appendChild(commentDiv);
-}
 
     // Удаление комментария
     function deleteComment(commentId) {
