@@ -211,281 +211,277 @@
     </div>
 
 <script>
-// Замените ВСЮ JavaScript часть на эту:
+    // Переменные состояния
+    let isAuthorLoggedIn = false;
 
-// Переменные состояния
-let isAuthorLoggedIn = false;
-
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    loadComments();
-    setupEventListeners();
-    checkAdminStatus();
-});
-
-// Настройка обработчиков событий
-function setupEventListeners() {
-    document.getElementById('submitComment').addEventListener('click', submitComment);
-    document.getElementById('loginBtn').addEventListener('click', loginAsAuthor);
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('clearAllBtn').addEventListener('click', clearAllComments);
-    document.getElementById('downloadCommentsBtn').addEventListener('click', downloadCommentsAsTxt);
-    
-    // Enter для отправки комментария
-    document.getElementById('commentText').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            submitComment();
-        }
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+        loadComments();
+        setupEventListeners();
+        checkAdminStatus();
     });
-    
-    document.getElementById('adminPassword').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            loginAsAuthor();
-        }
-    });
-}
 
-// Проверка статуса администратора
-function checkAdminStatus() {
-    const savedStatus = sessionStorage.getItem('isAuthorLoggedIn');
-    if (savedStatus === 'true') {
-        isAuthorLoggedIn = true;
-        showAdminPanel();
-    }
-}
-
-// Показать сообщение
-function showMessage(message, type = 'error') {
-    const messageArea = document.getElementById('messageArea');
-    messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
-    setTimeout(() => {
-        messageArea.innerHTML = '';
-    }, 5000);
-}
-
-// API функции для Vercel
-async function apiRequest(url, options = {}) {
-    try {
-        // Vercel автоматически размещает API routes в /api
-        const fullUrl = `/api${url}`;
-        const response = await fetch(fullUrl, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
+    // Настройка обработчиков событий
+    function setupEventListeners() {
+        document.getElementById('submitComment').addEventListener('click', submitComment);
+        document.getElementById('loginBtn').addEventListener('click', loginAsAuthor);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('clearAllBtn').addEventListener('click', clearAllComments);
+        document.getElementById('downloadCommentsBtn').addEventListener('click', downloadCommentsAsTxt);
+        
+        // Enter для отправки комментария
+        document.getElementById('commentText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                submitComment();
+            }
         });
         
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-    }
-}
-
-// Вход как автор
-async function loginAsAuthor() {
-    const password = document.getElementById('adminPassword').value;
-    
-    if (!password) {
-        showMessage('Введите пароль!');
-        return;
-    }
-    
-    try {
-        const result = await apiRequest('/comments?login=true', {
-            method: 'POST',
-            body: JSON.stringify({ password })
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginAsAuthor();
+            }
         });
-        
-        if (result.success) {
+    }
+
+    // Проверка статуса администратора
+    function checkAdminStatus() {
+        const savedStatus = sessionStorage.getItem('isAuthorLoggedIn');
+        if (savedStatus === 'true') {
             isAuthorLoggedIn = true;
-            sessionStorage.setItem('isAuthorLoggedIn', 'true');
             showAdminPanel();
-            showMessage('Вы вошли как автор!', 'success');
         }
-    } catch (error) {
-        showMessage('Неверный пароль!');
     }
-    
-    document.getElementById('adminPassword').value = '';
-}
 
-// Выход
-function logout() {
-    isAuthorLoggedIn = false;
-    sessionStorage.removeItem('isAuthorLoggedIn');
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('loginForm').style.display = 'block';
-    loadComments();
-    showMessage('Вы вышли из режима автора!', 'success');
-}
-
-// Показать панель администратора
-function showAdminPanel() {
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('loginForm').style.display = 'none';
-    loadComments();
-}
-
-// Отправка комментария
-async function submitComment() {
-    const author = document.getElementById('authorName').value.trim();
-    const text = document.getElementById('commentText').value.trim();
-    
-    if (!author || !text) {
-        showMessage('Пожалуйста, заполните все поля!');
-        return;
+    // Показать сообщение
+    function showMessage(message, type = 'error') {
+        const messageArea = document.getElementById('messageArea');
+        messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
+        setTimeout(() => {
+            messageArea.innerHTML = '';
+        }, 5000);
     }
-    
-    try {
-        const newComment = await apiRequest('/comments', {
-            method: 'POST',
-            body: JSON.stringify({ author, text })
-        });
-        
-        // Манипуляция DOM - добавление комментария без перезагрузки
-        displayComment(newComment);
-        
-        // Очистка формы
-        document.getElementById('commentText').value = '';
-        document.getElementById('authorName').value = '';
-        
-        showMessage('Комментарий добавлен!', 'success');
-    } catch (error) {
-        showMessage('Ошибка при добавлении комментария: ' + error.message);
-    }
-}
 
-// Загрузка комментариев
-async function loadComments() {
-    try {
-        const comments = await apiRequest('/comments');
-        const commentsList = document.getElementById('commentsList');
-        commentsList.innerHTML = '';
+    // API функции
+    async function apiRequest(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+
+    // Вход как автор
+    async function loginAsAuthor() {
+        const password = document.getElementById('adminPassword').value;
         
-        if (comments.length === 0) {
-            commentsList.innerHTML = '<p>Пока нет комментариев. Будьте первым!</p>';
+        if (!password) {
+            showMessage('Введите пароль!');
             return;
         }
         
-        comments.forEach(displayComment);
-    } catch (error) {
-        showMessage('Ошибка загрузки комментариев: ' + error.message);
-        document.getElementById('commentsList').innerHTML = '<p>Ошибка загрузки комментариев</p>';
-    }
-}
-
-// Отображение комментария (манипуляция DOM)
-function displayComment(comment) {
-    const commentsList = document.getElementById('commentsList');
-    
-    // Если это первый комментарий, очищаем сообщение "Загрузка..."
-    if (commentsList.innerHTML === '<p>Загрузка комментариев...</p>') {
-        commentsList.innerHTML = '';
-    }
-    
-    const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment';
-    commentDiv.id = 'comment-' + comment.id;
-    
-    const authorDiv = document.createElement('div');
-    authorDiv.className = 'comment-author';
-    authorDiv.textContent = comment.author;
-    
-    const textDiv = document.createElement('div');
-    textDiv.className = 'comment-text';
-    textDiv.textContent = comment.text;
-    
-    const dateDiv = document.createElement('div');
-    dateDiv.className = 'comment-date';
-    dateDiv.textContent = comment.date;
-    
-    commentDiv.appendChild(authorDiv);
-    commentDiv.appendChild(textDiv);
-    commentDiv.appendChild(dateDiv);
-    
-    // Кнопка удаления только для автора
-    if (isAuthorLoggedIn) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '✕';
-        deleteBtn.title = 'Удалить комментарий';
-        deleteBtn.onclick = function() { deleteComment(comment.id); };
-        commentDiv.appendChild(deleteBtn);
-    }
-    
-    commentsList.appendChild(commentDiv);
-}
-
-// Удаление комментария
-async function deleteComment(commentId) {
-    if (confirm('Вы уверены, что хотите удалить этот комментарий?')) {
         try {
-            await apiRequest(`/comments?id=${commentId}`, {
-                method: 'DELETE'
+            const result = await apiRequest('/api/admin/login', {
+                method: 'POST',
+                body: JSON.stringify({ password })
             });
             
-            // Манипуляция DOM - удаление элемента
-            const commentElement = document.getElementById('comment-' + commentId);
-            if (commentElement) {
-                commentElement.remove();
+            if (result.success) {
+                isAuthorLoggedIn = true;
+                sessionStorage.setItem('isAuthorLoggedIn', 'true');
+                showAdminPanel();
+                showMessage('Вы вошли как автор!', 'success');
+            }
+        } catch (error) {
+            showMessage('Неверный пароль!');
+        }
+        
+        document.getElementById('adminPassword').value = '';
+    }
+
+    // Выход
+    function logout() {
+        isAuthorLoggedIn = false;
+        sessionStorage.removeItem('isAuthorLoggedIn');
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        loadComments();
+        showMessage('Вы вышли из режима автора!', 'success');
+    }
+
+    // Показать панель администратора
+    function showAdminPanel() {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('loginForm').style.display = 'none';
+        loadComments();
+    }
+
+    // Отправка комментария
+    async function submitComment() {
+        const author = document.getElementById('authorName').value.trim();
+        const text = document.getElementById('commentText').value.trim();
+        
+        if (!author || !text) {
+            showMessage('Пожалуйста, заполните все поля!');
+            return;
+        }
+        
+        try {
+            const newComment = await apiRequest('/api/comments', {
+                method: 'POST',
+                body: JSON.stringify({ author, text })
+            });
+            
+            // Манипуляция DOM - добавление комментария без перезагрузки
+            displayComment(newComment);
+            
+            // Очистка формы
+            document.getElementById('commentText').value = '';
+            document.getElementById('authorName').value = '';
+            
+            showMessage('Комментарий добавлен!', 'success');
+        } catch (error) {
+            showMessage('Ошибка при добавлении комментария: ' + error.message);
+        }
+    }
+
+    // Загрузка комментариев
+    async function loadComments() {
+        try {
+            const comments = await apiRequest('/api/comments');
+            const commentsList = document.getElementById('commentsList');
+            commentsList.innerHTML = '';
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<p>Пока нет комментариев. Будьте первым!</p>';
+                return;
             }
             
-            showMessage('Комментарий удален!', 'success');
+            comments.forEach(displayComment);
         } catch (error) {
-            showMessage('Ошибка при удалении комментария: ' + error.message);
+            showMessage('Ошибка загрузки комментариев: ' + error.message);
+            document.getElementById('commentsList').innerHTML = '<p>Ошибка загрузки комментариев</p>';
         }
     }
-}
 
-// Удаление всех комментариев
-async function clearAllComments() {
-    if (confirm('Вы уверены, что хотите удалить ВСЕ комментарии? Это действие нельзя отменить.')) {
+    // Отображение комментария (манипуляция DOM)
+    function displayComment(comment) {
+        const commentsList = document.getElementById('commentsList');
+        
+        // Если это первый комментарий, очищаем сообщение "Загрузка..."
+        if (commentsList.innerHTML === '<p>Загрузка комментариев...</p>') {
+            commentsList.innerHTML = '';
+        }
+        
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment';
+        commentDiv.id = 'comment-' + comment.id;
+        
+        const authorDiv = document.createElement('div');
+        authorDiv.className = 'comment-author';
+        authorDiv.textContent = comment.author;
+        
+        const textDiv = document.createElement('div');
+        textDiv.className = 'comment-text';
+        textDiv.textContent = comment.text;
+        
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'comment-date';
+        dateDiv.textContent = comment.date;
+        
+        commentDiv.appendChild(authorDiv);
+        commentDiv.appendChild(textDiv);
+        commentDiv.appendChild(dateDiv);
+        
+        // Кнопка удаления только для автора
+        if (isAuthorLoggedIn) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '✕';
+            deleteBtn.title = 'Удалить комментарий';
+            deleteBtn.onclick = function() { deleteComment(comment.id); };
+            commentDiv.appendChild(deleteBtn);
+        }
+        
+        commentsList.appendChild(commentDiv);
+    }
+
+    // Удаление комментария
+    async function deleteComment(commentId) {
+        if (confirm('Вы уверены, что хотите удалить этот комментарий?')) {
+            try {
+                await apiRequest(`/api/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+                
+                // Манипуляция DOM - удаление элемента
+                const commentElement = document.getElementById('comment-' + commentId);
+                if (commentElement) {
+                    commentElement.remove();
+                }
+                
+                showMessage('Комментарий удален!', 'success');
+            } catch (error) {
+                showMessage('Ошибка при удалении комментария: ' + error.message);
+            }
+        }
+    }
+
+    // Удаление всех комментариев
+    async function clearAllComments() {
+        if (confirm('Вы уверены, что хотите удалить ВСЕ комментарии? Это действие нельзя отменить.')) {
+            try {
+                await apiRequest('/api/comments', {
+                    method: 'DELETE'
+                });
+                
+                // Манипуляция DOM - очистка списка
+                const commentsList = document.getElementById('commentsList');
+                commentsList.innerHTML = '<p>Пока нет комментариев. Будьте первым!</p>';
+                
+                showMessage('Все комментарии удалены!', 'success');
+            } catch (error) {
+                showMessage('Ошибка при удалении комментариев: ' + error.message);
+            }
+        }
+    }
+
+    // Скачать комментарии как TXT файл
+    async function downloadCommentsAsTxt() {
         try {
-            await apiRequest('/comments', {
-                method: 'DELETE'
-            });
+            const response = await fetch('/api/comments/download');
+            if (!response.ok) {
+                throw new Error('Download failed');
+            }
             
-            // Манипуляция DOM - очистка списка
-            const commentsList = document.getElementById('commentsList');
-            commentsList.innerHTML = '<p>Пока нет комментариев. Будьте первым!</p>';
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `comments_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             
-            showMessage('Все комментарии удалены!', 'success');
+            showMessage('Комментарии скачаны в TXT файл!', 'success');
         } catch (error) {
-            showMessage('Ошибка при удалении комментариев: ' + error.message);
+            showMessage('Ошибка при скачивании комментариев: ' + error.message);
         }
     }
-}
-
-// Скачать комментарии как TXT файл
-async function downloadCommentsAsTxt() {
-    try {
-        const response = await fetch('/api/comments?download=true');
-        if (!response.ok) {
-            throw new Error('Download failed');
-        }
-        
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `comments_${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showMessage('Комментарии скачаны в TXT файл!', 'success');
-    } catch (error) {
-        showMessage('Ошибка при скачивании комментариев: ' + error.message);
-    }
-}
 </script>
 </body>
 </html>
