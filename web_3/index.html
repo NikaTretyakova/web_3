@@ -261,28 +261,31 @@
         }, 5000);
     }
 
-    // API функции
-    async function apiRequest(url, options = {}) {
-        try {
-            const response = await fetch(url, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
-                ...options
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
+  async function apiRequest(url, options = {}) {
+    try {
+        // Добавляем /api ко всем путям
+        const fullUrl = url.startsWith('/') ? url : '/' + url;
+        const apiUrl = fullUrl.startsWith('/api') ? fullUrl : '/api' + fullUrl;
+        
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
     }
+}
 
     // Вход как автор
     async function loginAsAuthor() {
@@ -485,3 +488,4 @@
 </script>
 </body>
 </html>
+
