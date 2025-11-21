@@ -10,7 +10,7 @@ const COMMENTS_FILE = 'comments.txt';
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('.'));
 
 // Функции для работы с текстовым файлом
 async function loadComments() {
@@ -34,7 +34,6 @@ async function loadComments() {
         
         return comments;
     } catch (error) {
-        // Если файла нет, создаем пустой
         await fs.writeFile(COMMENTS_FILE, '');
         return [];
     }
@@ -148,11 +147,12 @@ app.post('/api/admin/login', (req, res) => {
 
 // Главная страница
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`✅ Сервер запущен на http://localhost:${PORT}`);
-    console.log(`📝 Комментарии сохраняются в файл: ${COMMENTS_FILE}`);
 });
+
+module.exports = app;
